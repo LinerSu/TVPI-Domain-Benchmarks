@@ -1,0 +1,106 @@
+FROM ubuntu:22.04
+
+ENV JOBS=16
+
+# Install dependencies
+ENV ESSENTIAL_PACKAGES="build-essential git pkg-config libgmp-dev libmpfr-dev \
+cmake cmake-data unzip zlib1g-dev ninja-build opam libclang-dev libclang-cpp-dev \
+less vim curl wget gcc-multilib sudo rsync m4 adduser libssl-dev"
+
+ENV PYTHON_PACKAGES="python3 python3-pip python3-setuptools python3-wheel"
+
+ENV LLVM14_PACKAGES="clang-14 lldb-14 lld-14 clang-format-14"
+
+ENV PIP_PACKAGES="lit OutputCheck networkx pandas matplotlib seaborn termcolor scipy"
+
+ENV OPAM_DEPS dune apron zarith yojson
+
+## Upate
+RUN apt-get update && apt-get install -yqq software-properties-common && \
+    apt-get update && apt-get upgrade -yqq
+
+RUN add-apt-repository -y ppa:deadsnakes/ppa && apt-get update
+
+## Install essential packages
+RUN apt-get install -yqq $ESSENTIAL_PACKAGES
+
+RUN apt-get install -yqq $PYTHON_PACKAGES
+
+RUN pip3 install $PIP_PACKAGES
+
+## Install LLVM 14
+RUN apt-get install -yqq $LLVM14_PACKAGES
+
+# Setup default user
+RUN useradd -ms /bin/bash agent && \
+    echo agent:hunt | chpasswd && \
+    usermod -aG sudo agent
+
+ENV TERM xterm-256color
+
+# Install boost
+WORKDIR /tmp
+RUN curl -sSOL https://archives.boost.io/release/1.84.0/source/boost_1_84_0.tar.gz && \
+    tar xf boost_1_84_0.tar.gz && cd boost_1_84_0 && \
+    ./bootstrap.sh --prefix=/opt/boost && \
+    ./b2 -j $JOBS install
+
+## Install Z3
+RUN git clone https://github.com/LinerSu/z3.git && \
+  cd z3 && git checkout fix-performance && \
+  python3 scripts/mk_make.py --prefix=/opt/z3 && cd build && make -j $JOBS && make install
+
+# SeaHorn
+WORKDIR /home/agent/tools
+RUN git clone https://github.com/LinerSu/seahorn.git && cd seahorn && git checkout VSTTE-2025
+WORKDIR /home/agent/tools/seahorn
+RUN git clone https://github.com/LinerSu/clam.git && cd clam && git checkout tvpi_dbm
+WORKDIR /home/agent/tools/seahorn/clam
+RUN git clone https://github.com/LinerSu/crab.git && cd crab && git checkout tvpi_dbm
+## Install SeaHorn
+WORKDIR /home/agent/tools/seahorn
+RUN mkdir build && cd build && \
+    cmake .. -GNinja \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_INSTALL_PREFIX=run \
+    -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm \
+    -DCMAKE_CXX_COMPILER=clang++-14 \
+    -DCMAKE_C_COMPILER=clang-14 \
+    -DZ3_ROOT=/opt/z3 \
+    -DYICES2_HOME=/opt/yices-2.6.4 \
+    -DSEA_ENABLE_LLD=ON \
+    -DCRAB_USE_LDD=ON \
+    -DCRAB_USE_ELINA=ON \
+    -DCLAM_USE_OBJECT_DOM=OFF \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+    -DCUSTOM_BOOST_ROOT=/opt/boost
+
+RUN cd build && \
+    cmake --build . --target extra && \
+    cmake .. && \
+    cmake --build . --target ldd && \
+    cmake .. && \
+    cmake --build . --target elina && \
+    cmake .. && \
+    ninja install
+
+ENV SEAHORN_ROOT=/home/agent/tools/seahorn/build/run
+
+# Add benchmarks
+USER agent
+WORKDIR /home/agent
+
+RUN mkdir benchmarks
+COPY --chown=agent:agent . benchmarks
+# RUN git clone https://github.com/LinerSu/TVPI-Domain-Benchmarks.git benchmarks
+
+# Case Study
+WORKDIR /home/agent/benchmarks
+RUN git submodule init && git submodule update
+RUN cd aws && /bin/bash scripts/pull_aws_repo.sh
+RUN cd firedancer && git clone https://github.com/firedancer-io/firedancer.git \
+    && cd firedancer && git fetch --tags && git checkout tags/v0.406.20113 \
+    && git submodule update --init --recursive
+
+# Create tmp folder
+RUN mkdir -p /tmp/results/case_study && mkdir -p /tmp/results/case_study/crab
