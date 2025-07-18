@@ -1,0 +1,8 @@
+[submodule "aws"]
+	path = aws
+	url = https://github.com/LinerSu/verify-c-common.git
+	branch = VSTTE-2025
+[submodule "firedancer"]
+	path = firedancer
+	url = https://github.com/LinerSu/verify-firedancer.git
+	branch = main
