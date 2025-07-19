@@ -1,0 +1,47 @@
+#!/bin/bash
+
+DIVIDER="\n================================================\n\n"
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+VSTTE_RES_DIR="$SCRIPT_DIR/aws/res/vstte"
+if [ ! -d "$VSTTE_RES_DIR" ]; then
+    mkdir -p "$VSTTE_RES_DIR"
+fi
+
+# Function to run experiments
+run_experiment() {
+    local domain=$1
+    printf $DIVIDER
+    echo "Running AI4BMC with the numerical domain $domain..."
+    printf $DIVIDER
+    if [ "$DEBUG_LEVEL" == "debug" ]; then
+        python3 get_exper_res.py --seahorn --seahorn-root $SEAHORN_ROOT --timeout 600 --bleed_edge --debug --crab --domain $domain
+    else
+        python3 get_exper_res.py --seahorn --seahorn-root $SEAHORN_ROOT --timeout 600 --bleed_edge --crab --domain $domain
+    fi
+    printf $DIVIDER
+    echo "Done running AI4BMC with the numerical domain $domain."
+    printf $DIVIDER
+}
+
+################################################################################
+# Operations for AWS experiments                                               #
+################################################################################
+echo "mkdir -p /tmp/results/aws-c/crab"
+mkdir -p /tmp/results/aws-c/crab
+
+# This script is designed to run aws benchmark tests.
+echo "cd $SCRIPT_DIR/aws/scripts"
+cd aws/scripts
+
+# Run the experiments
+# 1. Run experiment for the zones domain (in crab, we called split dbm)
+run_experiment "zones"
+# 2. Run experiment for the template TVPI domain (in crab, we called fixed tvpi dbm)
+run_experiment "fixed-tvpi-dbm"
+# 3. Run experiment for the convex polyhedra domain (we used Elina version)
+run_experiment "pk"
+
+# Gather statistics
+printf "\n\n================================================\n"
+echo "                 STATISTICS                 "
+printf "================================================\n\n"
