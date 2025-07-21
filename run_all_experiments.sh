@@ -35,3 +35,10 @@ echo "Running AWS experiments..."
 ################################################################################
 echo "Running Firedancer experiments..."
 ./run_firedancer_benchs.sh $DEBUG_LEVEL
+
+
+# Gather statistics
+printf "\n\n================================================\n"
+echo "                 STATISTICS                 "
+printf "================================================\n\n"
+python3 get_paper_results.py

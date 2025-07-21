@@ -33,6 +33,10 @@ run_experiment() {
     printf $DIVIDER
 }
 
+printf "\n\n================================================\n"
+echo "             Run Firedancer Benchmarks             "
+printf "================================================\n\n"
+
 ################################################################################
 # Operations for Firedancer experiments                                        #
 ################################################################################
@@ -50,8 +54,3 @@ run_experiment "zones"
 run_experiment "fixed-tvpi-dbm"
 # 3. Run experiment for the convex polyhedra domain (we used Elina version)
 run_experiment "pk"
-
-# Gather statistics
-printf "\n\n================================================\n"
-echo "                 STATISTICS                 "
-printf "================================================\n\n"
