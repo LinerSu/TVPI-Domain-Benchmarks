@@ -9,7 +9,7 @@ from termcolor import colored
 from scipy.stats import gaussian_kde
 
 # look at sample
-IS_SAMPLE = True
+IS_SAMPLE = False
 SAMPLE_FOLDER = "sample/" if IS_SAMPLE else ""
 
 # debugging

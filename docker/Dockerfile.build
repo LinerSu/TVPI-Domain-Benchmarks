@@ -11,7 +11,7 @@ ENV PYTHON_PACKAGES="python3 python3-pip python3-setuptools python3-wheel"
 
 ENV LLVM14_PACKAGES="clang-14 lldb-14 lld-14 clang-format-14"
 
-ENV PIP_PACKAGES="lit OutputCheck networkx pandas matplotlib seaborn termcolor scipy"
+ENV PIP_PACKAGES="lit OutputCheck networkx pandas matplotlib seaborn termcolor scipy Jinja2"
 
 ENV OPAM_DEPS dune apron zarith yojson
 
