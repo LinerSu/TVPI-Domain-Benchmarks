@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Set the debug level (info, debug)
+DEBUG_LEVEL=${1:-info}  # Default to info if not provided
+
+# Function to print debug messages
+debug() {
+    if [ "$DEBUG_LEVEL" == "debug" ]; then
+        echo "$@"
+    fi
+}
+
 DIVIDER="\n================================================\n\n"
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 VSTTE_RES_DIR="$SCRIPT_DIR/aws/res/vstte"
